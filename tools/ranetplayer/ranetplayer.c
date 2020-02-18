@@ -98,7 +98,13 @@ void usage()
       "Use: ranetplayer [options] [ranp file]\n"
       "Options:\n"
       "    -H|--host <address>:  Netplay host. Defaults to localhost.\n"
+// QuyenNC mod start
+#if !defined (VITA)
       "    -P|--port <port>:     Netplay port. Defaults to 55435.\n"
+#else
+      "    -P|--port <port>:     Netplay port. Defaults to 19492.\n"
+#endif
+// QuyenNC mod end
       "    -p|--play <file>:     Play back a recording over netplay.\n"
       "    -r|--record <file>:   Record netplay to a file.\n"
       "    -a|--ahead <frames>:  Number of frames by which to play ahead of the\n"
@@ -177,7 +183,13 @@ int main(int argc, char **argv)
    const char *host = "localhost",
       *ranp_in_file_name = NULL,
       *ranp_out_file_name = NULL;
+// QuyenNC mod start
+#if !defined (VITA)
    int port = RARCH_DEFAULT_PORT;
+#else
+   int port = RARCH_VITA_DEFAULT_PORT;
+#endif
+// QuyenNC mod end
    bool playing = false, playing_started = false,
       recording = false, recording_started = false;
    const char *optstring = NULL;

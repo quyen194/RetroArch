@@ -8090,6 +8090,12 @@ void main_exit(void *args)
    logger_shutdown();
 #endif
 
+// QuyenNC add start
+#if defined(DEBUG) && defined(VITA)
+   aries_logger_shutdown();
+#endif
+// QuyenNC add end
+
    frontend_driver_deinit(args);
    frontend_driver_exitspawn(
          path_get_ptr(RARCH_PATH_CORE),
@@ -8145,6 +8151,14 @@ int rarch_main(int argc, char *argv[], void *data)
       return 1;
    }
 #endif
+
+// QuyenNC add start
+#ifdef DEBUG
+   for (int i = 0; i < argc; i++) {
+      aries_logger_send("[%s:%d] argument[%d]=[%s]", __FILE__, __LINE__, argc, argv[i]);
+   }
+#endif
+// QuyenNC add end
 
    libretro_free_system_info(&runloop_system.info);
    command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
@@ -24575,7 +24589,13 @@ static void retroarch_print_help(const char *arg0)
 #ifdef HAVE_NETWORKING
       strlcat(buf, "  -H, --host            Host netplay as user 1.\n", sizeof(buf));
       strlcat(buf, "  -C, --connect=HOST    Connect to netplay server as user 2.\n", sizeof(buf));
+      // QuyenNC mod start
+      #if !defined (VITA)
       strlcat(buf, "      --port=PORT       Port used to netplay. Default is 55435.\n", sizeof(buf));
+      #else
+      strlcat(buf, "      --port=PORT       Port used to netplay. Default is 19492.\n", sizeof(buf));
+      #endif
+      // QuyenNC mod end
       strlcat(buf, "      --stateless       Use \"stateless\" mode for netplay\n", sizeof(buf));
       strlcat(buf, "                        (requires a very fast network).\n", sizeof(buf));
       strlcat(buf, "      --check-frames=NUMBER\n"
@@ -28159,6 +28179,22 @@ void rarch_get_cpu_architecture_string(char *cpu_arch_str, size_t len)
          break;
    }
 }
+
+// QuyenNC add start
+void get_other_args(int *argc, char **argv) {
+
+#ifdef HAVE_NETWORKING
+   // netplay server
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL)) {
+      argv[(*argc)++] = strdup("-H");
+   }
+   // netplay client
+   else if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)) {
+      // TODO: do I need to implement something here?
+   }
+#endif
+}
+// QuyenNC add end
 
 #ifdef HAVE_NETWORKING
 static bool rarch_write_debug_info(void)

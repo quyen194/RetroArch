@@ -15595,7 +15595,7 @@ static bool setting_append_list(
                   sizeof(settings->paths.netplay_server),
                   MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,
-                  "",
+                  settings->paths.netplay_server,  // QuyenNC mod
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -15610,7 +15610,13 @@ static bool setting_append_list(
                   &settings->uints.netplay_port,
                   MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_TCP_UDP_PORT,
+                  // QuyenNC mod start
+                  #if !defined (VITA)
                   RARCH_DEFAULT_PORT,
+                  #else
+                  RARCH_VITA_DEFAULT_PORT,
+                  #endif
+                  // QuyenNC mod end
                   &group_info,
                   &subgroup_info,
                   parent_group,

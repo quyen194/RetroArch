@@ -603,7 +603,7 @@ static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L3_R3;
 #elif defined(PS2) || defined(PSP)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_HOLD_START;
 #elif defined(VITA)
-static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L1_R1_START_SELECT;
+static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_L_R;  // QuyenNC mod
 #elif defined(SWITCH) || defined(ORBIS)
 static unsigned menu_toggle_gamepad_combo    = INPUT_TOGGLE_START_SELECT;
 #elif TARGET_OS_TV
@@ -621,7 +621,7 @@ static unsigned input_backtouch_toggle       = false;
 
 #define DEFAULT_ALL_USERS_CONTROL_MENU false
 
-#if defined(ANDROID) || defined(_WIN32)
+#if defined(ANDROID) || defined(_WIN32) || defined(VITA)  // QuyenNC mod
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS true
 #else
 #define DEFAULT_MENU_SWAP_OK_CANCEL_BUTTONS false
@@ -972,6 +972,11 @@ static const bool default_menu_show_start_screen = true;
 #ifndef RARCH_DEFAULT_PORT
 #define RARCH_DEFAULT_PORT 55435
 #endif
+// QuyenNC add start
+#ifndef RARCH_VITA_DEFAULT_PORT
+#define RARCH_VITA_DEFAULT_PORT 19492
+#endif
+// QuyenNC add end
 
 #ifndef RARCH_STREAM_DEFAULT_PORT
 #define RARCH_STREAM_DEFAULT_PORT 56400

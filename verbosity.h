@@ -49,6 +49,14 @@ void retro_main_log_file_init(const char *path, bool append);
 
 bool is_logging_to_file(void);
 
+// QuyenNC add start
+void aries_logger_init();
+void aries_logger_shutdown();
+void aries_logger_send(const char *__format,...);
+void aries_logger_send_v(const char *__format, va_list args);
+void aries_write_log(const char *fmt, ...);
+// QuyenNC add end
+
 #if defined(HAVE_LOGGER)
 
 void logger_init (void);
