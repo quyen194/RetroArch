@@ -110,6 +110,12 @@ bool init_netplay_discovery(void)
       goto error;
    }
 
+// QuyenNC add start
+#if defined(VITA)
+   socket_nonblock(fd);
+#endif
+// QuyenNC add end
+
    lan_ad_client_fd = fd;
    freeaddrinfo_retro(addr);
    return true;
@@ -135,7 +141,7 @@ void deinit_netplay_discovery(void)
 /* Todo: implement net_ifinfo and ntohs for consoles */
 bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, void *data)
 {
-#ifdef HAVE_NETPLAYDISCOVERY
+#if defined(HAVE_NETPLAYDISCOVERY) || defined(VITA)  // QuyenNC mod
    char port_str[6];
    int ret;
    unsigned k = 0;
@@ -149,6 +155,7 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
       {
          net_ifinfo_t interfaces;
          struct addrinfo hints = {0}, *addr;
+         struct addrinfo *addr_vita;  // QuyenNC add
          int canBroadcast      = 1;
 
          if (!net_ifinfo_new(&interfaces))
@@ -158,6 +165,11 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
          snprintf(port_str, 6, "%hu", (unsigned short) RARCH_DEFAULT_PORT);
          if (getaddrinfo_retro("255.255.255.255", port_str, &hints, &addr) < 0)
             return false;
+         // QuyenNC add start
+         snprintf(port_str, 6, "%hu", (unsigned short) RARCH_VITA_DEFAULT_PORT);
+         if (getaddrinfo_retro("255.255.255.255", port_str, &hints, &addr_vita) < 0)
+            return false;
+         // QuyenNC add end
 
          /* Make it broadcastable */
 #if defined(SOL_SOCKET) && defined(SO_BROADCAST)
@@ -180,9 +192,17 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state, 
                sizeof(struct ad_packet), 0, addr->ai_addr, addr->ai_addrlen);
             if (ret < (ssize_t) (2*sizeof(uint32_t)))
                RARCH_WARN("[discovery] Failed to send netplay discovery query (error: %d)\n", errno);
+
+            // QuyenNC add start
+            ret = (int)sendto(lan_ad_client_fd, (const char *) &ad_packet_buffer,
+               sizeof(struct ad_packet), 0, addr_vita->ai_addr, addr_vita->ai_addrlen);
+            if (ret < (ssize_t) (2*sizeof(uint32_t)))
+               RARCH_WARN("[discovery] Failed to send netplay discovery query (error: %d)\n", errno);
+            // QuyenNC add end
          }
 
          freeaddrinfo_retro(addr);
+         freeaddrinfo_retro(addr_vita);  // QuyenNC add
          net_ifinfo_free(&interfaces);
 
          break;
@@ -219,6 +239,12 @@ static bool init_lan_ad_server_socket(netplay_t *netplay, uint16_t port)
       goto error;
    }
 
+// QuyenNC add start
+#if defined(VITA)
+   socket_nonblock(fd);
+#endif
+// QuyenNC add end
+
    lan_ad_server_fd = fd;
    freeaddrinfo_retro(addr);
 
@@ -239,10 +265,18 @@ error:
 bool netplay_lan_ad_server(netplay_t *netplay)
 {
 /* Todo: implement net_ifinfo and ntohs for consoles */
-#ifdef HAVE_NETPLAYDISCOVERY
+#if defined(HAVE_NETPLAYDISCOVERY) || defined(VITA)  // QuyenNC mod
+// QuyenNC mod start
+#if !defined(VITA)
    fd_set fds;
+#endif
+// QuyenNC mod end
    int ret;
+// QuyenNC mod start
+#if !defined(VITA)
    struct timeval tmp_tv = {0};
+#endif
+// QuyenNC mod end
    struct sockaddr their_addr;
    socklen_t addr_size;
    unsigned k = 0;
@@ -256,23 +290,44 @@ bool netplay_lan_ad_server(netplay_t *netplay)
    if (!net_ifinfo_new(&interfaces))
       return false;
 
+// QuyenNC mod start
+#if !defined (VITA)
    if (lan_ad_server_fd < 0 && !init_lan_ad_server_socket(netplay, RARCH_DEFAULT_PORT))
-      return false;
+       return false;
+#else
+   if (lan_ad_server_fd < 0 && !init_lan_ad_server_socket(netplay, RARCH_VITA_DEFAULT_PORT))
+       return false;
+#endif
+// QuyenNC mod end
 
    /* Check for any ad queries */
    for (;;)
    {
+// QuyenNC mod start
+#if !defined(VITA)
       FD_ZERO(&fds);
       FD_SET(lan_ad_server_fd, &fds);
       if (socket_select(lan_ad_server_fd + 1, &fds, NULL, NULL, &tmp_tv) <= 0)
          break;
       if (!FD_ISSET(lan_ad_server_fd, &fds))
          break;
+#endif
+// QuyenNC mod end
 
       /* Somebody queried, so check that it's valid */
       addr_size = sizeof(their_addr);
+// QuyenNC mod start
+#if !defined(VITA)
       ret       = (int)recvfrom(lan_ad_server_fd, (char*)&ad_packet_buffer,
             sizeof(struct ad_packet), 0, &their_addr, &addr_size);
+#else
+      ret       = (int)recvfrom(lan_ad_server_fd, (char*)&ad_packet_buffer,
+            sizeof(struct ad_packet), MSG_DONTWAIT, &their_addr, &addr_size);
+      if (ret <= 0) {
+         break;
+      }
+#endif
+// QuyenNC mod end
       if (ret >= (ssize_t) (2 * sizeof(uint32_t)))
       {
          char s[NETPLAY_HOST_STR_LEN];
@@ -417,10 +472,18 @@ static int16_t htons_for_morons(int16_t value)
 
 static bool netplay_lan_ad_client(void)
 {
+// QuyenNC mod start
+#if !defined(VITA)
    fd_set fds;
+#endif
+// QuyenNC mod end
    socklen_t addr_size;
    struct sockaddr their_addr;
+// QuyenNC mod start
+#if !defined(VITA)
    struct timeval tmp_tv = {0};
+#endif
+// QuyenNC mod end
 
    if (lan_ad_client_fd < 0)
       return false;
@@ -428,6 +491,8 @@ static bool netplay_lan_ad_client(void)
    /* Check for any ad queries */
    for (;;)
    {
+// QuyenNC mod start
+#if !defined(VITA)
       FD_ZERO(&fds);
       FD_SET(lan_ad_client_fd, &fds);
       if (socket_select(lan_ad_client_fd + 1,
@@ -436,13 +501,27 @@ static bool netplay_lan_ad_client(void)
 
       if (!FD_ISSET(lan_ad_client_fd, &fds))
          break;
+#endif
+// QuyenNC mod end
 
       /* Somebody queried, so check that it's valid */
       addr_size = sizeof(their_addr);
 
+// QuyenNC mod start
+#if !defined(VITA)
       if (recvfrom(lan_ad_client_fd, (char*)&ad_packet_buffer,
             sizeof(struct ad_packet), 0, &their_addr, &addr_size) >=
             (ssize_t) sizeof(struct ad_packet))
+#else
+      int ret = (int)recvfrom(lan_ad_client_fd, (char*)&ad_packet_buffer,
+            sizeof(struct ad_packet), MSG_DONTWAIT, &their_addr, &addr_size);
+      if (ret <= 0) {
+         break;
+      }
+
+      if (ret >= (ssize_t) (2 * sizeof(uint32_t)))
+#endif
+// QuyenNC mod end
       {
          struct netplay_host *host = NULL;
 
@@ -453,6 +532,14 @@ static bool netplay_lan_ad_client(void)
          /* For this version */
          if (ntohl(ad_packet_buffer.protocol_version) != NETPLAY_PROTOCOL_VERSION)
             continue;
+
+// QuyenNC add start
+#if defined(VITA)
+         /* Make message is fullsize */
+         if (ret < (ssize_t) sizeof(struct ad_packet))
+            continue;
+#endif
+// QuyenNC add end
 
          /* And that we know how to handle it */
          if (their_addr.sa_family == AF_INET)
