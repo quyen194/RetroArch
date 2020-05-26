@@ -1989,6 +1989,9 @@ bool is_input_keyboard_display_on(void);
 /* creates folder and core options stub file for subsequent runs */
 bool create_folder_and_core_options(void);
 
+void get_other_args(int *argc, char **argv);
+
+
 /* Input overrides  */
 
 extern unsigned get_gamepad_input_override(void);

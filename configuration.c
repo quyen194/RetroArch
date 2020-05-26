@@ -1853,7 +1853,13 @@ static struct config_uint_setting *populate_settings_uint(settings_t *settings, 
    SETTING_UINT("screen_orientation",           &settings->uints.screen_orientation, true, ORIENTATION_NORMAL, false);
    SETTING_UINT("aspect_ratio_index",           &settings->uints.video_aspect_ratio_idx, true, DEFAULT_ASPECT_RATIO_IDX, false);
 #ifdef HAVE_NETWORKING
+// QuyenNC mod start
+#if !defined (VITA)
    SETTING_UINT("netplay_ip_port",              &settings->uints.netplay_port,         true, RARCH_DEFAULT_PORT, false);
+#else
+   SETTING_UINT("netplay_ip_port",              &settings->uints.netplay_port,         true, RARCH_VITA_DEFAULT_PORT, false);
+#endif
+// QuyenNC mod end
    SETTING_OVERRIDE(RARCH_OVERRIDE_SETTING_NETPLAY_IP_PORT);
    SETTING_UINT("netplay_input_latency_frames_min",&settings->uints.netplay_input_latency_frames_min, true, 0, false);
    SETTING_UINT("netplay_input_latency_frames_range",&settings->uints.netplay_input_latency_frames_range, true, 0, false);

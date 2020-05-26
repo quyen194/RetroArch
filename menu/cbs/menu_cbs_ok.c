@@ -5359,7 +5359,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
          int lan_room_count                   = 0;
          bool refresh                         = false;
 
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_CONSOLE) || defined(VITA)  // QuyenNC mod
          netplay_discovery_driver_ctl(RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES, &lan_hosts);
          if (lan_hosts)
             lan_room_count                    = (int)lan_hosts->size;
@@ -5367,6 +5367,7 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
 
          netplay_rooms_parse(data->data);
 
+         netplay_room_count = 0;  // QuyenNC add
          if (netplay_room_list)
             free(netplay_room_list);
 
@@ -5374,57 +5375,46 @@ static void netplay_refresh_rooms_cb(retro_task_t *task,
           * in the same list. If both entries are available, we want to show only
           * the LAN one. */
 
-         netplay_room_count                   = netplay_rooms_get_count();
+         int internet_room_count = netplay_rooms_get_count();  // QuyenNC add
+
          netplay_room_list                    = (struct netplay_room*)
-            calloc(netplay_room_count + lan_room_count,
+            calloc(internet_room_count + lan_room_count,  // QuyenNC mod
                   sizeof(struct netplay_room));
 
-         for (i = 0; i < (unsigned)netplay_room_count; i++)
-            memcpy(&netplay_room_list[i], netplay_room_get(i), sizeof(netplay_room_list[i]));
-
+         // QuyenNC mod start
          if (lan_room_count != 0)
          {
-            for (i = netplay_room_count; i < (unsigned)(netplay_room_count + lan_room_count); i++)
+            for (i = 0; i < (unsigned)lan_room_count; i++)
             {
+               struct netplay_room *room = &netplay_room_list[netplay_room_count++];
                struct netplay_host *host = &lan_hosts->hosts[j++];
 
-               strlcpy(netplay_room_list[i].nickname,
-                     host->nick,
-                     sizeof(netplay_room_list[i].nickname));
+               strlcpy(room->nickname, host->nick, sizeof(room->nickname));
 
-               strlcpy(netplay_room_list[i].address,
-                     host->address,
-                     INET6_ADDRSTRLEN);
-               strlcpy(netplay_room_list[i].corename,
-                     host->core,
-                     sizeof(netplay_room_list[i].corename));
-               strlcpy(netplay_room_list[i].retroarch_version,
-                     host->retroarch_version,
-                     sizeof(netplay_room_list[i].retroarch_version));
-               strlcpy(netplay_room_list[i].coreversion,
-                     host->core_version,
-                     sizeof(netplay_room_list[i].coreversion));
-               strlcpy(netplay_room_list[i].gamename,
-                     host->content,
-                     sizeof(netplay_room_list[i].gamename));
-               strlcpy(netplay_room_list[i].frontend,
-                     host->frontend,
-                     sizeof(netplay_room_list[i].frontend));
-               strlcpy(netplay_room_list[i].subsystem_name,
-                     host->subsystem_name,
-                     sizeof(netplay_room_list[i].subsystem_name));
+               strlcpy(room->address, host->address, INET6_ADDRSTRLEN);
 
-               netplay_room_list[i].port      = host->port;
-               netplay_room_list[i].gamecrc   = host->content_crc;
-               netplay_room_list[i].timestamp = 0;
-               netplay_room_list[i].lan       = true;
+               strlcpy(room->corename, host->core, sizeof(room->corename));
+               strlcpy(room->retroarch_version, host->retroarch_version, sizeof(room->retroarch_version));
+               strlcpy(room->coreversion, host->core_version, sizeof(room->coreversion));
+               strlcpy(room->gamename, host->content, sizeof(room->gamename));
+               strlcpy(room->frontend, host->frontend, sizeof(room->frontend));
+               strlcpy(room->subsystem_name, host->subsystem_name, sizeof(room->subsystem_name));
+
+               room->port      = host->port;
+               room->gamecrc   = host->content_crc;
+               room->timestamp = 0;
+               room->lan = true;
 
                snprintf(s, sizeof(s),
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME),
-                     netplay_room_list[i].nickname);
+                     room->nickname);
             }
-            netplay_room_count += lan_room_count;
          }
+
+         for (i = 0; i < (unsigned)internet_room_count; i++) {
+            memcpy(&netplay_room_list[netplay_room_count++], netplay_room_get(i), sizeof(netplay_room_list[i]));
+         }
+         // QuyenNC mod end
 
          menu_entries_ctl(MENU_ENTRIES_CTL_SET_REFRESH, &refresh);
          menu_driver_ctl(RARCH_MENU_CTL_SET_PREVENT_POPULATE, NULL);
@@ -5448,7 +5438,7 @@ finish:
 
 }
 
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_CONSOLE) || defined(VITA)  // QuyenNC mod
 static void netplay_lan_scan_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
@@ -5481,6 +5471,13 @@ static void netplay_lan_scan_callback(retro_task_t *task,
             MENU_ENUM_LABEL_DEFERRED_NETPLAY_LAN_SCAN_SETTINGS_LIST)))
       return;
 
+   // QuyenNC add start
+   /* Don't push the results if we left the netplay menu */
+   if (!string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_TAB))
+    && !string_is_equal(label, msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY)))
+      return;
+   // QuyenNC add end
+
    if (!netplay_discovery_driver_ctl(
             RARCH_NETPLAY_DISCOVERY_CTL_LAN_GET_RESPONSES,
             (void *) &netplay_hosts))
@@ -5510,7 +5507,7 @@ static int action_ok_push_netplay_refresh_rooms(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
    char url [2048] = "http://lobby.libretro.com/list/";
-#ifndef RARCH_CONSOLE
+#if !defined(RARCH_CONSOLE) || defined(VITA)  // QuyenNC mod
    task_push_netplay_lan_scan(netplay_lan_scan_callback);
 #endif
    task_push_http_transfer(url, true, NULL, netplay_refresh_rooms_cb, NULL);
