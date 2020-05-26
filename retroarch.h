@@ -2007,6 +2007,8 @@ void retroarch_init_task_queue(void);
 
 bool is_input_keyboard_display_on(void);
 
+void get_other_args(int *argc, char **argv);
+
 
 /* Input overrides  */
 

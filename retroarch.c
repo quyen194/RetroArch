@@ -5352,9 +5352,17 @@ static bool init_netplay(void *direct_host, const char *server, unsigned port)
          _netplay_is_client ? direct_host : NULL,
          _netplay_is_client ? (!netplay_client_deferred ? server
             : server_address_deferred) : NULL,
+// QuyenNC mod start
+#if !defined (VITA)
          _netplay_is_client ? (!netplay_client_deferred ? port
             : server_port_deferred   ) 
          : (port != 0 ? port : RARCH_DEFAULT_PORT),
+#else
+         _netplay_is_client ? (!netplay_client_deferred ? port
+            : server_port_deferred   ) 
+         : (port != 0 ? port : RARCH_VITA_DEFAULT_PORT),
+#endif
+// QuyenNC mod end
          netplay_stateless_mode,
          netplay_check_frames,
          &cbs,
@@ -10096,6 +10104,12 @@ void main_exit(void *args)
    logger_shutdown();
 #endif
 
+// QuyenNC add start
+#if defined(DEBUG) && defined(VITA)
+   aries_logger_shutdown();
+#endif
+// QuyenNC add end
+
    frontend_driver_deinit(args);
    frontend_driver_exitspawn(
          path_get_ptr(RARCH_PATH_CORE),
@@ -10154,6 +10168,14 @@ int rarch_main(int argc, char *argv[], void *data)
       return 1;
    }
 #endif
+
+// QuyenNC add start
+#ifdef DEBUG
+   for (int i = 0; i < argc; i++) {
+      aries_logger_send("[%s:%d] argument[%d]=[%s]", __FILE__, __LINE__, argc, argv[i]);
+   }
+#endif
+// QuyenNC add end
 
    libretro_free_system_info(&runloop_system.info);
    command_event(CMD_EVENT_HISTORY_DEINIT, NULL);
@@ -26974,7 +26996,13 @@ static void retroarch_print_help(const char *arg0)
 #ifdef HAVE_NETWORKING
       strlcat(buf, "  -H, --host            Host netplay as user 1.\n", sizeof(buf));
       strlcat(buf, "  -C, --connect=HOST    Connect to netplay server as user 2.\n", sizeof(buf));
+      // QuyenNC mod start
+      #if !defined (VITA)
       strlcat(buf, "      --port=PORT       Port used to netplay. Default is 55435.\n", sizeof(buf));
+      #else
+      strlcat(buf, "      --port=PORT       Port used to netplay. Default is 19492.\n", sizeof(buf));
+      #endif
+      // QuyenNC mod end
       strlcat(buf, "      --stateless       Use \"stateless\" mode for netplay\n", sizeof(buf));
       strlcat(buf, "                        (requires a very fast network).\n", sizeof(buf));
       strlcat(buf, "      --check-frames=NUMBER\n"
@@ -30634,6 +30662,22 @@ void retroarch_force_video_driver_fallback(const char *driver)
    }
    exit(1);
 }
+
+// QuyenNC add start
+void get_other_args(int *argc, char **argv) {
+
+#ifdef HAVE_NETWORKING
+   // netplay server
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL)) {
+      argv[(*argc)++] = strdup("-H");
+   }
+   // netplay client
+   else if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)) {
+      // TODO: do I need to implement something here?
+   }
+#endif
+}
+// QuyenNC add end
 
 enum retro_language rarch_get_language_from_iso(const char *iso639)
 {

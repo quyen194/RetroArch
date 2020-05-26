@@ -1667,11 +1667,15 @@ static bool netplay_get_cmd(netplay_t *netplay,
                }
                isize = ntohl(isize);
 
+               // QuyenNC del start
+               #if 0
                if (isize != netplay->state_size)
                {
                   RARCH_ERR("CMD_LOAD_SAVESTATE received an unexpected save state size.\n");
                   return netplay_cmd_nak(netplay, connection);
                }
+               #endif
+               // QuyenNC del end
 
                RECV(netplay->zbuffer, cmd_size - 2*sizeof(uint32_t))
                {
@@ -1695,6 +1699,14 @@ static bool netplay_get_cmd(netplay_t *netplay,
                   (unsigned)netplay->state_size);
                ctrans->decompression_backend->trans(ctrans->decompression_stream,
                   true, &rd, &wn, NULL);
+
+               // QuyenNC add start
+               if (wn != isize)
+               {
+                  RARCH_ERR("CMD_LOAD_SAVESTATE received an unexpected save state size.\n");
+                  return netplay_cmd_nak(netplay, connection);
+               }
+               // QuyenNC add end
 
                /* Force a rewind to the relevant frame */
                netplay->force_rewind = true;
