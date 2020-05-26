@@ -67,6 +67,8 @@
 #endif
 #endif
 
+#define MAX_ARGS 32  // QuyenNC add
+
 #ifndef VITA
 PSP_MODULE_INFO("RetroArch", 0, 1, 1);
 PSP_MAIN_THREAD_ATTR(THREAD_ATTR_USER|THREAD_ATTR_VFPU);
@@ -315,16 +317,39 @@ static void frontend_psp_init(void *data)
 #endif
 }
 
+// QuyenNC add start
+#ifdef DEBUG
+void aries_log(const char *fmt, ...)
+{
+   va_list ap;
+   FILE *log_file = NULL;
+
+   va_start(ap, fmt);
+
+   log_file = (FILE*)fopen("ux0:aries_retroarch.log", "ab");
+   if (log_file) {
+      vfprintf(log_file, fmt, ap);
+      fflush(log_file);
+      fclose(log_file);
+   }
+
+   va_end(ap);
+}
+#endif
+// QuyenNC add end
+
+// QuyenNC mod start
 static void frontend_psp_exec(const char *path, bool should_load_game)
 {
 #if defined(HAVE_KERNEL_PRX) || defined(IS_SALAMANDER) || defined(VITA)
-   char argp[512] = {0};
-   SceSize   args = 0;
 
 #if !defined(VITA)
+
+   char argp[512] = {0};
+   SceSize args = 0;
+
    strlcpy(argp, eboot_path, sizeof(argp));
    args = strlen(argp) + 1;
-#endif
 
 #ifndef IS_SALAMANDER
    if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
@@ -336,15 +361,38 @@ static void frontend_psp_exec(const char *path, bool should_load_game)
 #endif
 
    RARCH_LOG("Attempt to load executable: [%s].\n", path);
-#if defined(VITA)
-   RARCH_LOG("Attempt to load executable: %d [%s].\n", args, argp);
-   int ret =  sceAppMgrLoadExec(path, args==0? NULL : (char * const*)((const char*[]){argp, 0}), NULL);
-   RARCH_LOG("Attempt to load executable: [%d].\n", ret);
-#else
    exitspawn_kernel(path, args, argp);
+
+#else  /* VITA */
+
+   unsigned i;
+   int rarch_argc             = 0;
+   char *rarch_argv[MAX_ARGS] = { NULL };
+
+#ifndef IS_SALAMANDER
+   if (should_load_game && !path_is_empty(RARCH_PATH_CONTENT))
+   {
+      rarch_argv[rarch_argc++] = strdup(path_get(RARCH_PATH_CONTENT));
+
+      get_other_args(&rarch_argc, rarch_argv);
+   }
 #endif
+
+   RARCH_LOG("Attempt to load executable: [%s].\n", path);
+   RARCH_LOG("Attempt to load executable: argument count %d\n", rarch_argc);
+   for (i = 0; i < rarch_argc; i++) {
+      RARCH_LOG("Attempt to load executable: argument[%d] %s\n", rarch_argv[i]);
+   }
+   int ret =  sceAppMgrLoadExec(path, (rarch_argc == 0) ? NULL : (char * const*)rarch_argv, NULL);
+   RARCH_LOG("Attempt to load executable: [%d].\n", ret);
+
+   for (i = 0; i < rarch_argc; i++) {
+      free(rarch_argv[i]);
+   }
+#endif  /* VITA */
 #endif
 }
+// QuyenNC mod end
 
 #ifndef IS_SALAMANDER
 static bool frontend_psp_set_fork(enum frontend_fork fork_mode)

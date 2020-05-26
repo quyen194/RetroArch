@@ -563,6 +563,21 @@ static void content_load_init_wrap(
       RARCH_LOG("arg #%d: %s\n", i, argv[i]);
 }
 
+// QuyenNC add start
+bool is_argument_existed(const char * arg, int argc, char **argv) {
+   unsigned i;
+
+   for (i = 0; i < argc; i++) {
+      // check existed
+      if (!strcmp(arg, argv[i])) {
+         return true;
+      }
+   }
+
+   return false;
+}
+// QuyenNC add end
+
 /**
  * content_load:
  *
@@ -597,6 +612,24 @@ static bool content_load(content_ctx_info_t *info,
    if (wrap_args->touched)
    {
       content_load_init_wrap(wrap_args, &rarch_argc, rarch_argv);
+
+      // QuyenNC add start
+      // after wrap, all original args will be ignored, so we recover
+      for (i = 0; i < info->argc; i++) {
+         // validate arg
+         if (!info->argv[i] || !info->argv[i][0]) {
+            continue;
+         }
+
+         // check existed
+         if (is_argument_existed(info->argv[i], rarch_argc, rarch_argv)) {
+            continue;
+         }
+
+         rarch_argv[rarch_argc++] = strdup(info->argv[i]);
+      }
+      // QuyenNC add end
+
       memcpy(argv_copy, rarch_argv, sizeof(rarch_argv));
       rarch_argv_ptr = (char**)rarch_argv;
       rarch_argc_ptr = (int*)&rarch_argc;

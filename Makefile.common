@@ -1816,7 +1816,17 @@ ifeq ($(HAVE_NETWORKING), 1)
 
    ifneq ($(HAVE_SOCKET_LEGACY),1)
       OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
+   # QuyenNC add start
+   else ifeq ($(PLATFORM), vita)
+      OBJ += $(LIBRETRO_COMM_DIR)/net/net_ifinfo.o
+   # QuyenNC add end
    endif
+
+   # QuyenNC add start
+   ifeq ($(PLATFORM), vita)
+      OBJ += network/net_logger_quyen194.o
+   endif
+   # QuyenNC add end
 
    ifeq ($(WANT_IFADDRS), 1)
       DEFINES += -DWANT_IFADDRS
