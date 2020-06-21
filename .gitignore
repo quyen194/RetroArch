@@ -185,3 +185,15 @@ gfx/common/wayland/xdg-decoration-unstable-v1.h
 gfx/common/wayland/xdg-decoration-unstable-v1.c
 gfx/common/wayland/xdg-shell.c
 gfx/common/wayland/xdg-shell.h
+
+# QuyenNC add start
+/pkg/vita/retroarch/
+/pkg/vita/retroarch.vpk/
+/pkg/vita/vpk/
+*.sfo
+*.self
+*.elf
+*.vpk
+*.Tdepend
+retroarch.default.cfg
+# QuyenNC add end

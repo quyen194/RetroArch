@@ -138,6 +138,7 @@ make -C ../ -f Makefile.${platform}.salamander clean || exit 1
 fi
 
 # Cleanup existing core if it exists
+if [ "${FORCE_REBUILD}" = "YES" ]; then  # QuyenNC add
 if [ $PLATFORM = "ode-ps3" ]; then
    make -C ../ -f Makefile.${platform}.cobra clean || exit 1
 elif [ $MAKEFILE_GRIFFIN = "yes" ]; then
@@ -147,6 +148,7 @@ elif [ $PLATFORM = "unix" ]; then
 else
    make -C ../ -f Makefile.${platform} clean || exit 1
 fi
+fi  # QuyenNC add
 
 # Compile Salamander core
 if [ $SALAMANDER = "yes" ]; then
@@ -333,7 +335,10 @@ for f in `ls -v *_${platform}.${EXT}`; do
    elif [ $PLATFORM = "psp1" ] ; then
       rm -f ../retroarchpsp.elf
    elif [ $PLATFORM = "vita" ] ; then
-      rm -f ../retroarch_${platform}.velf ../retroarch_${platform}.elf ../eboot.bin
+      # QuyenNC mod start
+      # rm -f ../retroarch_${platform}.velf ../retroarch_${platform}.elf ../eboot.bin
+      rm -f ../retroarch_${platform}.velf ../eboot.bin
+      # QuyenNC mod end
    elif [ $PLATFORM = "ctr" ] ; then
       rm -f ../retroarch_3ds.elf
       rm -f ../retroarch_3ds.bnr
